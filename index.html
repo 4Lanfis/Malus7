@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malus Stufe 7 - Quantum Heap 500</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Share Tech Mono & VT323 -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff0055;
+            --neon-cyan: #00f3ff;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffe600;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: #020204;
+            color: #a5f3fc;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* Sci-Fi Canvas BG Layer */
+        #quantum-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.25;
+        }
+
+        /* Glassmorphism Chaos Container */
+        .quantum-panel {
+            background: rgba(4, 8, 16, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 25px rgba(0, 243, 255, 0.08);
+        }
+
+        /* Ultra dense custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(2, 2, 4, 0.95);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--neon-pink), var(--neon-cyan));
+            border-radius: 0;
+        }
+
+        /* Dense Chaotisches Pass-Item Design */
+        .q-node {
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.08s ease;
+            padding: 1px 3px;
+            display: inline-block;
+            word-break: break-all;
+            white-space: nowrap;
+            letter-spacing: -0.03em;
+            font-size: 10px;
+            line-height: 1.1;
+            user-select: none;
+            border-bottom: 1px solid transparent;
+        }
+        
+        @media (min-width: 640px) {
+            .q-node {
+                font-size: 11px;
+            }
+        }
+
+        .q-node:hover {
+            color: #ffffff;
+            background: #ff0055;
+            text-shadow: 0 0 10px #ffffff, 0 0 18px #ff0055;
+            transform: scale(1.08) skewX(-4deg);
+            z-index: 40;
+            box-shadow: 0 0 12px rgba(255, 0, 85, 0.8);
+            border-color: #00f3ff;
+        }
+
+        .q-node:active {
+            transform: scale(0.92);
+        }
+
+        /* Copied Glitch Feedback */
+        .q-node.intercepted {
+            color: #000000 !important;
+            background: #00ff66 !important;
+            text-shadow: 0 0 10px #00ff66 !important;
+            font-weight: bold;
+            animation: glitch-flash 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        @keyframes glitch-flash {
+            0% { transform: translate(2px, -2px) rotate(1deg); }
+            20% { transform: translate(-2px, 2px) rotate(-1deg); }
+            40% { transform: translate(1px, -1px); }
+            60% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Heavy CRT & Flicker Mesh Overlay */
+        .crt-filter {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.35) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.04),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.04)
+            );
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0.7;
+        }
+
+        /* Dynamic HUD Lines */
+        .hud-border {
+            position: relative;
+        }
+        .hud-border::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: 0; width: 30px; height: 2px;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        .hud-border::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; right: 0; width: 30px; height: 2px;
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-1 sm:p-3 relative select-none">
+
+    <!-- Quantum Particle Canvas -->
+    <canvas id="quantum-canvas"></canvas>
+
+    <!-- Floating Cyber Toast Notification -->
+    <div id="toast" class="fixed top-2 left-1/2 -translate-x-1/2 bg-black/95 border-2 border-cyan-400 text-cyan-300 font-mono text-xs px-4 py-2 shadow-[0_0_30px_rgba(0,243,255,0.8)] transition-all duration-150 -translate-y-24 opacity-0 z-50 rounded-none flex items-center gap-3">
+        <span class="w-2.5 h-2.5 bg-pink-500 animate-ping"></span>
+        <span id="toast-message" class="tracking-widest font-extrabold uppercase">QUANTUM_INTERCEPT</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-[98vw] quantum-panel p-2 sm:p-4 relative z-10 overflow-hidden hud-border">
+        <div class="crt-filter"></div>
+        
+        <!-- Chaotic Cyber Header -->
+        <div class="border-b border-cyan-500/30 pb-2 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-2 relative z-40">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 bg-pink-500 animate-pulse"></span>
+                    <h1 class="text-lg sm:text-2xl font-black tracking-tighter bg-gradient-to-r from-pink-500 via-cyan-400 to-yellow-300 bg-clip-text text-transparent uppercase font-['VT323'] text-3xl">
+                        MALUS STUFE 7 // QUANTUM HEAP 500
+                    </h1>
+                </div>
+                <p class="text-[9px] text-pink-400/80 font-mono tracking-widest mt-0.5">
+                    CRITICAL: 500 UNINDEXED HEAP MEMORY FRAGMENTS // CLICK NODE TO EXFILTRATE
+                </p>
+            </div>
+            
+            <!-- Controls & Live Stat Meters -->
+            <div class="flex items-center gap-3 text-[10px]">
+                <div class="bg-black/80 px-2 py-1 border border-pink-500/40 text-pink-400">
+                    STATUS: <span class="text-green-400 font-bold animate-pulse">OVERFLOW</span>
+                </div>
+                <button onclick="purgeHeap()" class="bg-pink-950/60 hover:bg-pink-800 text-pink-300 border border-pink-500/60 px-3 py-1 text-[10px] uppercase tracking-widest transition-all">
+                    [FLUSH_BUFFER]
+                </button>
+            </div>
+        </div>
+
+        <!-- Metric Counter Bar -->
+        <div class="grid grid-cols-4 gap-1.5 mb-2 text-[9px] sm:text-[10px] font-mono relative z-40">
+            <div class="bg-black/70 p-1 border border-cyan-500/30 text-center">
+                <span class="text-cyan-600 block text-[8px]">TOTAL_FRAGMENTS</span>
+                <span id="stat-total" class="text-cyan-400 font-black text-xs sm:text-sm">500</span>
+            </div>
+            <div class="bg-black/70 p-1 border border-pink-500/30 text-center">
+                <span class="text-pink-600 block text-[8px]">CAPTURED_NODES</span>
+                <span id="stat-copied" class="text-pink-400 font-black text-xs sm:text-sm">0 / 500</span>
+            </div>
+            <div class="bg-black/70 p-1 border border-yellow-500/30 text-center">
+                <span class="text-yellow-600 block text-[8px]">COLUMNS</span>
+                <span class="text-yellow-400 font-black text-xs sm:text-sm">4 COLUMNS</span>
+            </div>
+            <div class="bg-black/70 p-1 border border-green-500/30 text-center">
+                <span class="text-green-600 block text-[8px]">ENTROPY_MODE</span>
+                <span class="text-green-400 font-black text-xs sm:text-sm">MAX_CHAOS</span>
+            </div>
+        </div>
+
+        <!-- High-Density Inline 500-Password Stream (Exakt 4 Spalten, Unübersichtlich & Eng) -->
+        <div id="password-stream" class="font-mono text-[9px] sm:text-[10.5px] leading-snug max-h-[72vh] overflow-y-auto p-1 grid grid-cols-4 gap-x-1 gap-y-0.5 text-center bg-black/90 border border-cyan-900/50 relative z-40">
+            <!-- Items via JavaScript -->
+        </div>
+
+        <!-- Footer Bar -->
+        <div class="mt-2 pt-1 border-t border-cyan-500/20 flex flex-col sm:flex-row justify-between items-center text-[8px] sm:text-[9px] text-gray-500 font-mono gap-1 relative z-40">
+            <div class="flex items-center gap-1">
+                <span class="inline-block w-1.5 h-1.5 bg-cyan-400 animate-ping"></span>
+                <span class="text-cyan-400">CORE_ENTROPY: 0x8F9B // NO SEARCH // DIRECT MEMORY READ</span>
+            </div>
+            <span class="text-pink-500/70">MALUS_STUFE_7_QUANTUM_CORE_BUILD_500</span>
+        </div>
+    </div>
+
+    <script>
+        // Sci-Fi Audio FX Synthesizer (No external URL needed)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq = 800, type = 'sine', duration = 0.05) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Quantum Particle Canvas Background
+        const canvas = document.getElementById('quantum-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const particles = Array.from({ length: 65 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 2 + 1,
+            color: Math.random() > 0.5 ? '#ff0055' : '#00f3ff'
+        }));
+
+        function drawCanvas() {
+            ctx.fillStyle = 'rgba(2, 2, 4, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Connect nearby particles
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 100) {
+                        ctx.strokeStyle = p.color === p2.color ? p.color : '#00ff66';
+                        ctx.globalAlpha = (1 - dist / 100) * 0.25;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+            });
+
+            requestAnimationFrame(drawCanvas);
+        }
+        drawCanvas();
+
+        // Generierung von genau 500 extrem chaotischen, einzigartigen Passwörtern
+        function generateChaoticPasswords500() {
+            const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?~";
+            const hexSet = "0123456789ABCDEF";
+            const passwords = [];
+            const prefixes = ["0x", "::", "!!", "Q#", "SYS_", "01_", "$", "&&", ">>", "~~", "##", "§", "%"];
+
+            // Seeded deterministic randomness to generate 500 chaotic passwords
+            let seed = 1337;
+            function pseudoRandom() {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280;
+            }
+
+            for (let i = 0; i < 500; i++) {
+                let pass = "";
+                const type = Math.floor(pseudoRandom() * 4);
+                const prefix = prefixes[Math.floor(pseudoRandom() * prefixes.length)];
+
+                if (type === 0) {
+                    // Hybrid ASCII + Hex
+                    pass += prefix;
+                    for (let j = 0; j < 14; j++) {
+                        pass += charset.charAt(Math.floor(pseudoRandom() * charset.length));
+                    }
+                } else if (type === 1) {
+                    // Pure Glitch ASCII High Density
+                    for (let j = 0; j < 16; j++) {
+                        pass += charset.charAt(Math.floor(pseudoRandom() * charset.length));
+                    }
+                } else if (type === 2) {
+                    // Hex Block Chaos
+                    pass += "0x";
+                    for (let j = 0; j < 14; j++) {
+                        pass += hexSet.charAt(Math.floor(pseudoRandom() * hexSet.length));
+                    }
+                } else {
+                    // Complex Multi-symbol
+                    pass += prefix;
+                    for (let j = 0; j < 12; j++) {
+                        pass += charset.charAt(Math.floor(pseudoRandom() * charset.length));
+                    }
+                    pass += Math.floor(pseudoRandom() * 90 + 10);
+                }
+
+                passwords.push(pass);
+            }
+            return passwords;
+        }
+
+        const FIXED_PASSWORDS_500 = generateChaoticPasswords500();
+        const interceptedSet = new Set();
+
+        const passwordStreamEl = document.getElementById('password-stream');
+        const statCopiedEl = document.getElementById('stat-copied');
+        const statTotalEl = document.getElementById('stat-total');
+        const toast = document.getElementById('toast');
+
+        function renderPasswordStream() {
+            passwordStreamEl.innerHTML = '';
+
+            FIXED_PASSWORDS_500.forEach((pass, index) => {
+                const isIntercepted = interceptedSet.has(index);
+
+                const spanItem = document.createElement('span');
+                spanItem.className = `q-node ${isIntercepted ? 'intercepted' : ''}`;
+                spanItem.textContent = pass;
+                spanItem.title = `EXTRACT NODE #${String(index + 1).padStart(3, '0')}`;
+                
+                spanItem.onclick = () => interceptNode(index, pass);
+                spanItem.onmouseenter = () => playBeep(1200, 'sine', 0.02);
+
+                passwordStreamEl.appendChild(spanItem);
+            });
+
+            updateStats();
+        }
+
+        function interceptNode(index, passwordText) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = passwordText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+
+            try {
+                document.execCommand('copy');
+                interceptedSet.add(index);
+                playBeep(440, 'sawtooth', 0.08);
+                setTimeout(() => playBeep(880, 'square', 0.08), 50);
+
+                renderPasswordStream();
+                showToast(`NODE #${String(index + 1).padStart(3, '0')} EXFILTRATED: ${passwordText}`);
+            } catch (err) {
+                showToast('EXFIL_FAILED');
+            }
+
+            document.body.removeChild(tempInput);
+        }
+
+        function updateStats() {
+            const total = FIXED_PASSWORDS_500.length;
+            const captured = interceptedSet.size;
+
+            if (statTotalEl) statTotalEl.textContent = total;
+            if (statCopiedEl) statCopiedEl.textContent = `${captured} / ${total}`;
+        }
+
+        function purgeHeap() {
+            interceptedSet.clear();
+            playBeep(200, 'sawtooth', 0.15);
+            renderPasswordStream();
+            showToast("BUFFER FLUSHED // HEAP RESET");
+        }
+
+        let toastTimeout;
+        function showToast(message) {
+            const toastMsg = document.getElementById('toast-message');
+            if (toastMsg && toast) {
+                toastMsg.textContent = message;
+
+                toast.classList.remove('-translate-y-24', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('-translate-y-24', 'opacity-0');
+                }, 1500);
+            }
+        }
+
+        window.onload = function() {
+            renderPasswordStream();
+        };
+    </script>
+</body>
+</html>
